@@ -26,8 +26,15 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".EventListenerService"
+        <service
+            android:name=".EventListenerService"
             android:exported="true">
+            <intent-filter>
+                <action android:name="com.google.android.gms.wearable.DATA_CHANGED" />
+                <data android:pathPattern="/path/to/audio/data/.*"
+                    android:scheme="wear"
+                    android:host="*" />
+            </intent-filter>
         </service>
     </application>
 
