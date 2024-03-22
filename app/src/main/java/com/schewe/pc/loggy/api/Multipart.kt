@@ -22,7 +22,7 @@ constructor(url: URL) {
 
     companion object {
         private val LINE_FEED = "\r\n"
-        private val maxBufferSize = 1024 * 1024
+        private val maxBufferSize = 10 * 1024 * 1024
         private val charset = "UTF-8"
     }
 
@@ -100,12 +100,11 @@ constructor(url: URL) {
 
     /**
      * Upload the file and receive a response from the server.
-     * @param onFileUploadedListener
      * *
      * @throws IOException
      */
     @Throws(IOException::class)
-    fun upload(onFileUploadedListener: OnFileUploadedListener?) {
+    fun upload() {
         writer.append(LINE_FEED).flush()
         writer.append("--").append(boundary).append("--")
             .append(LINE_FEED)
@@ -119,21 +118,14 @@ constructor(url: URL) {
                     .inputStream))
                 val response = reader.use(BufferedReader::readText)
                 httpConnection.disconnect()
-                onFileUploadedListener?.onFileUploadingSuccess(response)
             } else {
-                onFileUploadedListener?.onFileUploadingFailed(status)
+                throw Exception("File could not be uploaded")
             }
 
         } catch (e: IOException) {
             e.printStackTrace()
         }
 
-    }
-
-    interface OnFileUploadedListener {
-        fun onFileUploadingSuccess(response: String)
-
-        fun onFileUploadingFailed(responseCode: Int)
     }
 
 }

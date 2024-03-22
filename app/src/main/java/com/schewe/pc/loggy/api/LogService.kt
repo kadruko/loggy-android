@@ -11,7 +11,7 @@ class LogService {
             val url = URL("${baseURL}/audio")
             val multipart = Multipart(url)
             multipart.addFilePart("audio", file, file.name, "audio/pcm")
-            multipart.upload(onFileUploadedListener = null)
+            multipart.upload()
         }
     }
 }
