@@ -16,6 +16,9 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 import java.lang.Exception
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 class EventListenerService : WearableListenerService() {
 
@@ -36,12 +39,14 @@ class EventListenerService : WearableListenerService() {
 
                 // Hier können Sie die Audiodaten weiterverarbeiten
                 writeAudioDataToFile(audioData!!)
+                uploadFiles()
             }
         }
     }
 
     companion object{
         private const val FILE_SIZE_LIMIT = 1 * 1024 * 1024  // 1 MB
+        private const val FILE_PATH = "/"
     }
 
     private var outputStream: FileOutputStream? = null
@@ -50,7 +55,8 @@ class EventListenerService : WearableListenerService() {
     private fun writeAudioDataToFile(audioData: ByteArray) {
         try {
             if (outputStream == null) {
-                file = File("audio.pcm")
+                val timeStamp: Long = Date().time
+                file = File(FILE_PATH, "$timeStamp.pcm")
 
                 // Erstellt die Datei, wenn sie nicht existiert
                 if (!file!!.exists()) {
@@ -63,20 +69,31 @@ class EventListenerService : WearableListenerService() {
             outputStream!!.write(audioData)
 
             if (file!!.length() > FILE_SIZE_LIMIT) {
-                try {
-                    LogService.createAudio(file!!)
 
-                    // Schließt den aktuellen Stream und startet einen neuen für die nächste Datei
-                    outputStream!!.close()
-                    outputStream = null
-                    file!!.delete()
-                    file = null
-                }catch (e: Exception){
-                    Log.d("X", "File could not be uploaded.")
-                }
+                // Schließt den aktuellen Stream und startet einen neuen für die nächste Datei
+                outputStream!!.close()
+                outputStream = null
             }
         } catch (e: IOException) {
             e.printStackTrace()
+        }
+    }
+
+    private fun uploadFiles() {
+        val directory = File(FILE_PATH)
+        val files = directory.listFiles { _, name -> name.endsWith(".pcm") }
+
+        files?.forEach { file ->
+            if(file.length() > FILE_SIZE_LIMIT) {
+                try {
+                    LogService.createAudio(file)
+
+                    // Löscht die Datei, nachdem sie hochgeladen wurde
+                    file.delete()
+                } catch (e: Exception) {
+                    Log.d("X", "File could not be uploaded.")
+                }
+            }
         }
     }
 }
