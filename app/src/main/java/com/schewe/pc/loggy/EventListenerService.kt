@@ -46,33 +46,32 @@ class EventListenerService : WearableListenerService() {
 
     companion object{
         private const val FILE_SIZE_LIMIT = 1 * 1024 * 1024  // 1 MB
-        private const val FILE_PATH = "/"
     }
-
-    private var outputStream: FileOutputStream? = null
-    private var file: File? = null
 
     private fun writeAudioDataToFile(audioData: ByteArray) {
         try {
-            if (outputStream == null) {
-                val timeStamp: Long = Date().time
-                file = File(FILE_PATH, "$timeStamp.pcm")
+            // val timeStamp: Long = Date().time
+            val file = File(filesDir, "stream.pcm")
 
-                // Erstellt die Datei, wenn sie nicht existiert
-                if (!file!!.exists()) {
-                    file!!.createNewFile()
-                }
-
-                outputStream = FileOutputStream(file!!)
+            // Erstellt die Datei, wenn sie nicht existiert
+            if (!file.exists()) {
+                file.createNewFile()
             }
 
-            outputStream!!.write(audioData)
+            val outputStream = FileOutputStream(file, true)
+            outputStream.write(audioData)
 
-            if (file!!.length() > FILE_SIZE_LIMIT) {
+            Log.d("X", "Wrote to file.")
+
+            if (file.length() > FILE_SIZE_LIMIT) {
+                Log.d("X", "New file because file already too big: ${file.length()}")
 
                 // Schließt den aktuellen Stream und startet einen neuen für die nächste Datei
-                outputStream!!.close()
-                outputStream = null
+                outputStream.close()
+
+                val timeStamp: Long = Date().time
+                val uploadFile = File(filesDir, "$timeStamp-upload.pcm")
+                file.renameTo(uploadFile)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -80,18 +79,21 @@ class EventListenerService : WearableListenerService() {
     }
 
     private fun uploadFiles() {
-        val directory = File(FILE_PATH)
-        val files = directory.listFiles { _, name -> name.endsWith(".pcm") }
+        val directory = File(filesDir, "/")
+        val files = directory.listFiles { _, name -> name.endsWith("upload.pcm") }
 
         files?.forEach { file ->
+            Log.d("X", "File found for upload ${file.name}.")
             if(file.length() > FILE_SIZE_LIMIT) {
                 try {
                     LogService.createAudio(file)
 
+                    Log.d("X", "File was uploaded.")
+
                     // Löscht die Datei, nachdem sie hochgeladen wurde
                     file.delete()
                 } catch (e: Exception) {
-                    Log.d("X", "File could not be uploaded.")
+                    Log.d("X", "File could not be uploaded: ${e.message}")
                 }
             }
         }

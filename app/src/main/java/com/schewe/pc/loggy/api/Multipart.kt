@@ -1,5 +1,6 @@
 package com.schewe.pc.loggy.api
 
+import android.util.Log
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.URL
@@ -118,8 +119,9 @@ constructor(url: URL) {
                     .inputStream))
                 val response = reader.use(BufferedReader::readText)
                 httpConnection.disconnect()
+                Log.d("X", "File successfully sent.")
             } else {
-                throw Exception("File could not be uploaded")
+                throw Exception("File could not be uploaded: ${httpConnection.responseMessage}")
             }
 
         } catch (e: IOException) {
