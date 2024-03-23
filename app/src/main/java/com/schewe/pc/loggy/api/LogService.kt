@@ -18,7 +18,7 @@ import java.time.format.DateTimeFormatter
 
 class LogService {
     companion object {
-        val baseURL = "http://89.58.29.139:3020";
+        val baseURL = "http://89.58.29.139:3021";
 
         fun createAudio(file: File, timestamp: Long) {
             val instant = Instant.ofEpochMilli(timestamp)
