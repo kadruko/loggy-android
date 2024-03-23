@@ -34,11 +34,12 @@ class EventListenerService : WearableListenerService() {
 
                 val dataMapItem = DataMapItem.fromDataItem(event.dataItem)
                 val audioData = dataMapItem.dataMap.getByteArray("audio_data")
+                val timestamp = dataMapItem.dataMap.getLong("timestamp")
 
                 Log.d("X", "Collected audio data")
 
                 // Hier können Sie die Audiodaten weiterverarbeiten
-                writeAudioDataToFile(audioData!!)
+                writeAudioDataToFile(audioData!!, timestamp)
                 uploadFiles()
             }
         }
@@ -48,30 +49,32 @@ class EventListenerService : WearableListenerService() {
         private const val FILE_SIZE_LIMIT = 1 * 1024 * 1024  // 1 MB
     }
 
-    private fun writeAudioDataToFile(audioData: ByteArray) {
+    private fun writeAudioDataToFile(audioData: ByteArray, timestamp: Long) {
         try {
-            // val timeStamp: Long = Date().time
-            val file = File(filesDir, "stream.pcm")
+            val streamFile = File(filesDir, "stream.pcm")
+            val metadataFile = File(filesDir, "metadata.txt")
 
             // Erstellt die Datei, wenn sie nicht existiert
-            if (!file.exists()) {
-                file.createNewFile()
+            if (!streamFile.exists()) {
+                streamFile.createNewFile()
+                metadataFile.createNewFile()
+                metadataFile.writeText("$timestamp")
             }
 
-            val outputStream = FileOutputStream(file, true)
+            val outputStream = FileOutputStream(streamFile, true)
             outputStream.write(audioData)
 
             Log.d("X", "Wrote to file.")
 
-            if (file.length() > FILE_SIZE_LIMIT) {
-                Log.d("X", "New file because file already too big: ${file.length()}")
+            if (streamFile.length() > FILE_SIZE_LIMIT) {
+                Log.d("X", "New file because file already too big: ${streamFile.length()}")
 
                 // Schließt den aktuellen Stream und startet einen neuen für die nächste Datei
                 outputStream.close()
 
-                val timeStamp: Long = Date().time
-                val uploadFile = File(filesDir, "$timeStamp-upload.pcm")
-                file.renameTo(uploadFile)
+                val beginTimestamp = metadataFile.readText()
+                val uploadFile = File(filesDir, "$beginTimestamp-upload.pcm")
+                streamFile.renameTo(uploadFile)
             }
         } catch (e: IOException) {
             e.printStackTrace()
@@ -85,8 +88,9 @@ class EventListenerService : WearableListenerService() {
         files?.forEach { file ->
             Log.d("X", "File found for upload ${file.name}.")
             if(file.length() > FILE_SIZE_LIMIT) {
+                val timestamp = file.name.split("-")[0].toLong()
                 try {
-                    LogService.createAudio(file)
+                    LogService.createAudio(file, timestamp)
 
                     Log.d("X", "File was uploaded.")
 

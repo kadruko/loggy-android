@@ -23,7 +23,7 @@ constructor(url: URL) {
 
     companion object {
         private val LINE_FEED = "\r\n"
-        private val maxBufferSize = 10 * 1024 * 1024
+        private val maxBufferSize = 1024 * 1024
         private val charset = "UTF-8"
     }
 
@@ -121,7 +121,11 @@ constructor(url: URL) {
                 httpConnection.disconnect()
                 Log.d("X", "File successfully sent.")
             } else {
-                throw Exception("File could not be uploaded: ${httpConnection.responseMessage}")
+                val reader = BufferedReader(InputStreamReader(httpConnection
+                    .errorStream))
+                val responseError = reader.use(BufferedReader::readText)
+
+                throw Exception("File could not be uploaded. Error: ${httpConnection.responseMessage}, Response: $responseError")
             }
 
         } catch (e: IOException) {
